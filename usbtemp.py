@@ -5,14 +5,20 @@ import time
 class Thermometer:
 
     def __init__(self, port, timeout = 1):
-        self.uart = serial.Serial(port, timeout = timeout)
+        self.port = port;
+        self.timeout = timeout;
+        self.uart = None
 
-    def close(self):
+    def Open(self):
+       if not self.uart or not self.uart.isOpen():
+            self.uart = serial.Serial(self.port, timeout = self.timeout);
+
+    def Close(self):
        if self.uart and self.uart.isOpen():
             self.uart.close()
             self.uart = None
 
-    def rom(self):
+    def Rom(self):
         self._owReset();
         self._owWrite(0x33)
         data = self._readBytes(8)
@@ -20,13 +26,11 @@ class Thermometer:
             raise Exception('CRC error')
         return data.hex()
 
-    def temperature(self):
+    def Temperature(self):
         self._owReset();
         self._owWrite(0xcc)
         self._owWrite(0x44)
-
         time.sleep(1)
-
         self._owReset();
         self._owWrite(0xcc)
         self._owWrite(0xbe)
@@ -34,7 +38,6 @@ class Thermometer:
         if (self._crc8(scratchpad[0:8]) != scratchpad[8]):
             raise Exception('CRC error')
         temp = struct.unpack('<h', scratchpad[0:2])[0]
-
         return float(temp) / 16.0
 
     def _clear(self):
@@ -42,7 +45,7 @@ class Thermometer:
         self.uart.reset_output_buffer()
 
     def _owReset(self):
-        if not self.uart:
+        if not self.uart or not self.uart.isOpen():
             raise Exception('Device is not connected')
         self._clear()
         self.uart.baudrate = 9600
@@ -62,7 +65,7 @@ class Thermometer:
             raise Exception('Presence error: 0x%02x' % d)
 
     def _owWriteByte(self, byte):
-        if not self.uart:
+        if not self.uart or not self.uart.isOpen():
             raise Exception('Device is not connected')
         w = []
         for i in range(8):
@@ -81,7 +84,9 @@ class Thermometer:
         return value
 
     def _owWrite(self, byte):
-        self._owWriteByte(byte)
+        b = self._owWriteByte(byte)
+        if b != byte:
+            raise Exception('Invalid response')
 
     def _owRead(self):
         return self._owWriteByte(0xff)
@@ -100,10 +105,12 @@ class Thermometer:
                 byte >>= 1
         return crc
 
-thermometer = Thermometer('/dev/ttyUSB0');
-try:
-    print("Device ROM is %s" % thermometer.rom())
-    print("Temperature is %0.2f" % thermometer.temperature())
-except Exception as e:
-    print(e)
-thermometer.close()
+if __name__ == '__main__':
+    thermometer = Thermometer('/dev/ttyUSB0')
+    thermometer.Open()
+    try:
+        print("Device ROM is %s" % thermometer.Rom())
+        print("Temperature is %0.2f °C" % thermometer.Temperature())
+    except Exception as e:
+        print(e)
+    thermometer.Close()
