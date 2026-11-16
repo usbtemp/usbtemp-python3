@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "usbtemp"
+version = "1.0.0"
+description = "Thermometer class for the usbtemp.com USB thermometer (DS18B20 over a 1-wire serial adapter)"
+readme = "README.md"
+license = {file = "LICENSE.md"}
+requires-python = ">=3.6"
+dependencies = ["pyserial>=3.3"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Hardware",
+]
+
+[project.urls]
+Homepage = "https://usbtemp.com/"
+Source = "https://github.com/usbtemp/usbtemp-python3"
+
+[tool.setuptools]
+py-modules = ["usbtemp"]
